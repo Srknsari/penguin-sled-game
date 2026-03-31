@@ -332,13 +332,14 @@
 
     #steers {
       position: absolute;
-      bottom: clamp(12px, 3.5vh, 32px);
+      bottom: clamp(12px, 3.5vh, 40px);
       left: 0;
       right: 0;
       z-index: 30;
       display: flex;
-      justify-content: space-between;
-      padding: 0 clamp(14px, 4vw, 36px);
+      justify-content: center;
+      gap: clamp(80px, 15vw, 300px);
+      padding: 0;
       pointer-events: none;
     }
 
@@ -1320,21 +1321,34 @@
 
     const btnL = document.getElementById('btnL'), btnR = document.getElementById('btnR');
     ['pointerdown', 'touchstart'].forEach(ev => {
-      btnL.addEventListener(ev, e => { e.preventDefault(); resumeAC(); steerL = true; }, { passive: false });
-      btnR.addEventListener(ev, e => { e.preventDefault(); resumeAC(); steerR = true; }, { passive: false });
+      btnL.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); resumeAC(); steerL = true; mouseActive = false; }, { passive: false });
+      btnR.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); resumeAC(); steerR = true; mouseActive = false; }, { passive: false });
     });
     ['pointerup', 'pointercancel', 'touchend', 'touchcancel'].forEach(ev => {
-      btnL.addEventListener(ev, () => steerL = false);
-      btnR.addEventListener(ev, () => steerR = false);
+      btnL.addEventListener(ev, e => { e.stopPropagation(); steerL = false; });
+      btnR.addEventListener(ev, e => { e.stopPropagation(); steerR = false; });
     });
 
     cv.addEventListener('touchstart', e => {
       resumeAC();
-      const x = e.touches[0].clientX;
-      steerL = x < W / 2; steerR = x >= W / 2;
+      if (G.screen !== 'game') return;
+      mouseActive = true;
+      const nx = (e.touches[0].clientX / W) - 0.5;
+      if (Math.abs(nx) < 0.08) mouseTarget = pengLane;
+      else mouseTarget = Math.max(-1, Math.min(1, nx * 2.2));
     }, { passive: true });
-    cv.addEventListener('touchend', () => { steerL = false; steerR = false; });
-    cv.addEventListener('touchcancel', () => { steerL = false; steerR = false; });
+    
+    cv.addEventListener('touchmove', e => {
+      if (G.screen !== 'game') return;
+      if (e.cancelable) e.preventDefault();
+      mouseActive = true;
+      const nx = (e.touches[0].clientX / W) - 0.5;
+      if (Math.abs(nx) < 0.08) mouseTarget = pengLane;
+      else mouseTarget = Math.max(-1, Math.min(1, nx * 2.2));
+    }, { passive: false });
+
+    cv.addEventListener('touchend', () => { mouseActive = false; });
+    cv.addEventListener('touchcancel', () => { mouseActive = false; });
 
     cv.addEventListener('mousemove', e => {
       if (G.screen !== 'game') return;
